@@ -143,6 +143,7 @@
     <string name="import_youtube_music_playlist_title">Import playlist from YouTube Music</string>
     <string name="import_youtube_music_playlist_desc">Paste the public YouTube Music playlist link below</string>
     <string name="invalid_playlist_url">Invalid playlist URL</string>
+    <string name="import_from_any_link">Import from any link</string>
 
     <!-- Sort menu -->
     <string name="sort_by_create_date">Date added</string>
@@ -472,6 +473,46 @@
     <string name="spotify_clear_selection">Clear</string>
     <string name="spotify_account">Spotify account</string>
     <string name="spotify_waiting_for_login">Waiting for Spotify login</string>
+
+    <!-- Universal playlist link import -->
+    <string name="playlist_link_title">Import from any link</string>
+    <string name="playlist_link_error_title">Couldn\'t import that link</string>
+    <string name="playlist_link_desc">Paste a playlist, album, or track link from Spotify, Apple Music, Deezer, Tidal, Amazon Music, SoundCloud, or YouTube Music — Echo Music will find the matching songs on YouTube Music.</string>
+    <string name="playlist_link_hint">Paste a playlist, album, or track link…</string>
+    <string name="playlist_link_paste">Paste from clipboard</string>
+    <string name="playlist_link_resolve">Find tracks</string>
+    <string name="playlist_link_detected">Detected: %1$s</string>
+    <string name="playlist_link_unrecognized">Couldn\'t recognize that as a supported playlist link</string>
+    <string name="playlist_link_empty">That link didn\'t contain any tracks</string>
+    <string name="playlist_link_generic_failure">Something went wrong resolving that link</string>
+    <string name="playlist_link_short_link_failed">Couldn\'t follow that short link</string>
+    <string name="playlist_link_youtube_failed">Couldn\'t load that from YouTube Music</string>
+    <string name="playlist_link_spotify_track_unsupported">Single Spotify track links aren\'t supported yet — try a playlist or album link</string>
+    <string name="playlist_link_amazon_unsupported">Amazon Music links can\'t be read without signing in on their site, so Echo Music can\'t resolve them — try a Spotify, Apple Music, Deezer, Tidal, SoundCloud, or YouTube Music link instead</string>
+    <string name="playlist_link_resolving">Looking up %1$s…</string>
+    <string name="playlist_link_matching_progress">Matching songs on YouTube Music — %1$d/%2$d</string>
+    <string name="playlist_link_review_title">Review matches</string>
+    <string name="playlist_link_no_match">No match found</string>
+    <string name="playlist_link_low_confidence">Possible match</string>
+    <string name="playlist_link_confident_match">Matched</string>
+    <string name="playlist_link_play_now">Play now</string>
+    <string name="playlist_link_save_playlist">Save as playlist</string>
+    <string name="playlist_link_download">Download</string>
+    <string name="playlist_link_saved">Saved %1$d songs to \"%2$s\"</string>
+    <string name="playlist_link_downloading">Queued %1$d songs for download</string>
+    <string name="playlist_link_included_count">%1$d of %2$d songs selected</string>
+    <string name="playlist_link_new_search">Import another link</string>
+    <string name="playlist_link_save_playlist_title">Save as playlist</string>
+    <string name="playlist_link_service_spotify">Spotify</string>
+    <string name="playlist_link_service_youtube_music">YouTube Music</string>
+    <string name="playlist_link_service_apple_music">Apple Music</string>
+    <string name="playlist_link_service_deezer">Deezer</string>
+    <string name="playlist_link_service_amazon_music">Amazon Music</string>
+    <string name="playlist_link_service_tidal">Tidal</string>
+    <string name="playlist_link_service_soundcloud">SoundCloud</string>
+    <string name="playlist_link_kind_playlist">playlist</string>
+    <string name="playlist_link_kind_album">album</string>
+    <string name="playlist_link_kind_track">track</string>
     <string name="service_uptime">Service Uptime</string>
     <string name="service_uptime_desc">Check the status of music providers</string>
     <string name="music_providers">Music Providers</string>

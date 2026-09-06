@@ -1552,6 +1552,16 @@ class MainActivity : ComponentActivity() {
                             reportException(it)
                         }
                     }
+                } else {
+                    // Not a YouTube/YouTube Music link — check the "universal playlist link"
+                    // parser for the other supported services (Spotify, Apple Music, Deezer,
+                    // Tidal, Amazon Music, SoundCloud) and hand it to that screen if recognized.
+                    val externalLink = echo.music.iad1tya.playlistlink.PlaylistLinkParser.parse(uri.toString())
+                    if (externalLink != null) {
+                        navController.navigate(
+                            "settings/playlist_link_import?link=${URLEncoder.encode(uri.toString(), "UTF-8")}"
+                        )
+                    }
                 }
             }
         }

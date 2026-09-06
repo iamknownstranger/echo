@@ -187,6 +187,10 @@ localmedia/     Local on-device media file playback
 lyrics/         Lyrics orchestration (aggregates the lyrics provider modules)
 models/         Shared data models
 playback/       Media3/ExoPlayer service, download manager, queueing, audio
+playlistlink/   "Universal playlist link" — parses Spotify/Apple Music/Deezer/
+                Tidal/Amazon Music/SoundCloud/YouTube Music links, fetches
+                their track lists credential-free where possible, and
+                matches them to YouTube Music via YouTubeMusicMatcher
 quicksettings/  Android quick settings tile
 recognition/    Music recognition (Echo Find) app-side logic
 spotify/        Spotify API integration

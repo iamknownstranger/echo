@@ -1,0 +1,17 @@
+{
+  "features": [
+    {
+      "title": "Universal playlist link import",
+      "description": "Paste any playlist, album, or track link from Spotify, Apple Music, Deezer, Tidal, Amazon Music, SoundCloud, or YouTube Music and Echo Music resolves it into matching YouTube Music tracks — reviewable with per-track confidence, then playable instantly, saved as a library playlist, or queued for offline download.",
+      "area": "playlistlink"
+    }
+  ],
+  "bug_fixes": [],
+  "contributors": [
+    {
+      "name": "Ananya Sangani",
+      "email": "ananyasangani@gmail.com",
+      "contribution": "Universal playlist link import feature"
+    }
+  ]
+}
