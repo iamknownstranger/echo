@@ -482,6 +482,8 @@
     <string name="playlist_link_paste">Paste from clipboard</string>
     <string name="playlist_link_resolve">Find tracks</string>
     <string name="playlist_link_detected">Detected: %1$s</string>
+    <string name="search_open_pasted_link">Open playlist link</string>
+    <string name="search_open_pasted_link_desc">Import this %1$s link into Echo Music</string>
     <string name="playlist_link_unrecognized">Couldn\'t recognize that as a supported playlist link</string>
     <string name="playlist_link_empty">That link didn\'t contain any tracks</string>
     <string name="playlist_link_generic_failure">Something went wrong resolving that link</string>

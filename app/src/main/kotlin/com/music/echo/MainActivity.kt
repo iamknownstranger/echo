@@ -707,12 +707,24 @@ class MainActivity : ComponentActivity() {
                 val onSearch: (String) -> Unit = remember {
                     { searchQuery ->
                         if (searchQuery.isNotEmpty()) {
-                            navController.navigate("search/${URLEncoder.encode(searchQuery, "UTF-8")}")
+                            // A pasted playlist/album/track link is not a search term. Searching
+                            // YouTube Music for the literal URL text returns nothing useful, so
+                            // hand recognized links to the universal link importer instead.
+                            // Deliberately not recorded in search history — a URL is noise there.
+                            val pastedLink =
+                                echo.music.iad1tya.playlistlink.PlaylistLinkParser.parse(searchQuery)
+                            if (pastedLink != null) {
+                                navController.navigate(
+                                    "settings/playlist_link_import?link=${URLEncoder.encode(searchQuery, "UTF-8")}"
+                                )
+                            } else {
+                                navController.navigate("search/${URLEncoder.encode(searchQuery, "UTF-8")}")
 
-                            if (dataStore[PauseSearchHistoryKey] != true) {
-                                lifecycleScope.launch(Dispatchers.IO) {
-                                    database.query {
-                                        insert(SearchHistory(query = searchQuery))
+                                if (dataStore[PauseSearchHistoryKey] != true) {
+                                    lifecycleScope.launch(Dispatchers.IO) {
+                                        database.query {
+                                            insert(SearchHistory(query = searchQuery))
+                                        }
                                     }
                                 }
                             }

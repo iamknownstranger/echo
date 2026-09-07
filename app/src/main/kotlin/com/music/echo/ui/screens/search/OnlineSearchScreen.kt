@@ -5,10 +5,13 @@ package echo.music.iad1tya.ui.screens.search
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.asPaddingValues
@@ -32,6 +35,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
@@ -59,6 +63,8 @@ import echo.music.iad1tya.LocalDatabase
 import echo.music.iad1tya.LocalPlayerAwareWindowInsets
 import echo.music.iad1tya.LocalPlayerConnection
 import echo.music.iad1tya.R
+import echo.music.iad1tya.playlistlink.PlaylistLinkParser
+import echo.music.iad1tya.playlistlink.PlaylistService
 import echo.music.iad1tya.constants.SuggestionItemHeight
 import echo.music.iad1tya.models.toMediaMetadata
 import echo.music.iad1tya.playback.queues.YouTubeQueue
@@ -126,6 +132,20 @@ fun OnlineSearchScreen(
         }
     }
 
+    // Parsing is pure and cheap, but keyed on the query so it does not rerun on every
+    // recomposition while results stream in.
+    val pastedLink = remember(query) { PlaylistLinkParser.parse(query) }
+    val pastedLinkServiceName = when (pastedLink?.service) {
+        PlaylistService.SPOTIFY -> "Spotify"
+        PlaylistService.YOUTUBE_MUSIC -> "YouTube Music"
+        PlaylistService.APPLE_MUSIC -> "Apple Music"
+        PlaylistService.DEEZER -> "Deezer"
+        PlaylistService.AMAZON_MUSIC -> "Amazon Music"
+        PlaylistService.TIDAL -> "TIDAL"
+        PlaylistService.SOUNDCLOUD -> "SoundCloud"
+        null -> ""
+    }
+
     LazyColumn(
         state = lazyListState,
         contentPadding = LocalPlayerAwareWindowInsets.current.only(WindowInsetsSides.Bottom).asPaddingValues(),
@@ -133,6 +153,57 @@ fun OnlineSearchScreen(
             .fillMaxSize()
             .background(if (pureBlack) Color.Black else MaterialTheme.colorScheme.background)
     ) {
+        // Pasting a playlist link into search is a common way to bring one over from
+        // another service, but the URL text itself is a useless search term. Surface the
+        // importer as an explicit first result so the redirect on submit is not a surprise.
+        if (pastedLink != null) {
+            item(key = "pasted_playlist_link") {
+                Surface(
+                    onClick = {
+                        onSearch(query)
+                        onDismiss()
+                    },
+                    shape = RoundedCornerShape(16.dp),
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                        .animateItem()
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.link),
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(modifier = Modifier.size(16.dp))
+                        Column {
+                            Text(
+                                text = stringResource(R.string.search_open_pasted_link),
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                            Text(
+                                text = stringResource(
+                                    R.string.search_open_pasted_link_desc,
+                                    pastedLinkServiceName
+                                ),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
         if (viewState.history.isNotEmpty()) {
             item(key = "history_header") {
                 Text(
