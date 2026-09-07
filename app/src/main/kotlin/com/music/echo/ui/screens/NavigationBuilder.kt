@@ -439,6 +439,17 @@ fun NavGraphBuilder.navigationBuilder(
         SpotifyImportScreen(navController)
     }
 
+    composable(
+        route = "settings/playlist_link_import?link={link}",
+        arguments = listOf(navArgument("link") { type = NavType.StringType; nullable = true; defaultValue = null }),
+    ) { backStackEntry ->
+        val encodedLink = backStackEntry.arguments?.getString("link")
+        val decodedLink = encodedLink?.let {
+            runCatching { java.net.URLDecoder.decode(it, "UTF-8") }.getOrDefault(it)
+        }
+        PlaylistLinkScreen(navController, initialLink = decodedLink)
+    }
+
     composable(route = "settings/integrations/listen_together") {
         ListenTogetherSettings(navController, scrollBehavior)
     }

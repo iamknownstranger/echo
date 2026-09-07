@@ -35,6 +35,7 @@ import com.music.innertube.YouTube
 import com.music.innertube.models.SongItem
 import echo.music.iad1tya.models.MediaMetadata
 import echo.music.iad1tya.models.toMediaMetadata
+import echo.music.iad1tya.playlistlink.ExternalTrack
 import echo.music.iad1tya.spotify.Spotify
 import echo.music.iad1tya.spotify.SpotifyAuth
 import echo.music.iad1tya.spotify.SpotifyMapper
@@ -180,6 +181,39 @@ class SpotifyImportRepository @Inject constructor(
                 }
 
             SpotifyImportSource.Playlist(resolved)
+        }
+
+    /**
+     * Fetches a Spotify playlist's full track list for the "universal playlist link" feature
+     * (see [echo.music.iad1tya.playlistlink.PlaylistLinkRepository]). Reuses the same
+     * authenticated GraphQL session and pagination as [addPlaylistByUrl] / [importSources] rather
+     * than duplicating the Spotify client — requires the user to already be connected via
+     * Settings → Import from Spotify.
+     */
+    suspend fun fetchPlaylistTracksForLink(playlistId: String): SpotifyLinkPlaylist =
+        withContext(Dispatchers.IO) {
+            ensureAuthenticated()
+            val playlist = spotifyCallWithTokenRetry { Spotify.playlist(playlistId).getOrThrow() }
+            val tracks = fetchAllTracks(SpotifyImportSource.Playlist(playlist))
+            SpotifyLinkPlaylist(
+                title = playlist.name,
+                subtitle = playlist.owner?.displayName,
+                artworkUrl = SpotifyMapper.getPlaylistThumbnail(playlist),
+                tracks = tracks.map { it.toExternalTrack() },
+            )
+        }
+
+    /** Album counterpart to [fetchPlaylistTracksForLink]. */
+    suspend fun fetchAlbumTracksForLink(albumId: String): SpotifyLinkPlaylist =
+        withContext(Dispatchers.IO) {
+            ensureAuthenticated()
+            val album = spotifyCallWithTokenRetry { Spotify.album(albumId).getOrThrow() }
+            SpotifyLinkPlaylist(
+                title = album.name,
+                subtitle = album.artists.joinToString(", ") { it.name },
+                artworkUrl = album.images.firstOrNull { it.width in 200..400 }?.url ?: album.images.firstOrNull()?.url,
+                tracks = album.tracks?.items.orEmpty().map { it.toExternalTrack() },
+            )
         }
 
     suspend fun importSources(
@@ -623,3 +657,20 @@ sealed interface SpotifyImportSource {
         override val type: SpotifyImportSourceType = SpotifyImportSourceType.LIKED_SONGS
     }
 }
+
+/** Return shape for [SpotifyImportRepository.fetchPlaylistTracksForLink] / `fetchAlbumTracksForLink`. */
+data class SpotifyLinkPlaylist(
+    val title: String,
+    val subtitle: String?,
+    val artworkUrl: String?,
+    val tracks: List<ExternalTrack>,
+)
+
+private fun SpotifyTrack.toExternalTrack(): ExternalTrack = ExternalTrack(
+    title = name,
+    artists = artists.map { it.name },
+    album = album?.name,
+    durationMillis = durationMs.toLong().takeIf { it > 0 },
+    isrc = null,
+    artworkUrl = SpotifyMapper.getTrackThumbnail(this),
+)

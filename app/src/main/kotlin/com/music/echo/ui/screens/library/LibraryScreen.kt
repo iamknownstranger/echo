@@ -202,6 +202,13 @@ fun LibraryScreen(navController: NavController) {
                                 showYoutubeImportDialog = true
                             }
                         )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.import_from_any_link)) },
+                            onClick = {
+                                showImportMenu = false
+                                navController.navigate("settings/playlist_link_import")
+                            }
+                        )
                     }
                 }
             }
