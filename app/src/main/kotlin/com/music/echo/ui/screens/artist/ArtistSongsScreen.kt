@@ -2,28 +2,41 @@
 
 package echo.music.iad1tya.ui.screens.artist
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -31,9 +44,15 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.media3.exoplayer.offline.Download
+import androidx.media3.exoplayer.offline.DownloadRequest
+import androidx.media3.exoplayer.offline.DownloadService
 import androidx.navigation.NavController
+import echo.music.iad1tya.LocalDownloadUtil
 import echo.music.iad1tya.LocalPlayerAwareWindowInsets
 import echo.music.iad1tya.LocalPlayerConnection
 import echo.music.iad1tya.R
@@ -43,6 +62,7 @@ import echo.music.iad1tya.constants.ArtistSongSortTypeKey
 import echo.music.iad1tya.constants.CONTENT_TYPE_HEADER
 import echo.music.iad1tya.constants.HideExplicitKey
 import echo.music.iad1tya.extensions.toMediaItem
+import echo.music.iad1tya.playback.ExoDownloadService
 import echo.music.iad1tya.playback.queues.ListQueue
 import echo.music.iad1tya.ui.component.HideOnScrollFAB
 import echo.music.iad1tya.ui.component.IconButton
@@ -51,6 +71,7 @@ import echo.music.iad1tya.ui.component.SongListItem
 import echo.music.iad1tya.ui.component.SortHeader
 import echo.music.iad1tya.ui.menu.SongMenu
 import echo.music.iad1tya.ui.utils.backToMain
+import echo.music.iad1tya.ui.utils.isScrollingUp
 import echo.music.iad1tya.utils.listItemShape
 import echo.music.iad1tya.utils.rememberEnumPreference
 import echo.music.iad1tya.utils.rememberPreference
@@ -82,6 +103,30 @@ fun ArtistSongsScreen(
     val artist by viewModel.artist.collectAsState()
     val songs by viewModel.songs.collectAsState()
     val lazyListState = rememberLazyListState()
+
+    val downloadUtil = LocalDownloadUtil.current
+    var downloadState by remember {
+        mutableIntStateOf(Download.STATE_STOPPED)
+    }
+
+    LaunchedEffect(songs) {
+        if (songs.isEmpty()) return@LaunchedEffect
+        downloadUtil.downloads.collect { downloads ->
+            downloadState =
+                if (songs.all { downloads[it.id]?.state == Download.STATE_COMPLETED }) {
+                    Download.STATE_COMPLETED
+                } else if (songs.all {
+                        downloads[it.id]?.state == Download.STATE_QUEUED ||
+                                downloads[it.id]?.state == Download.STATE_DOWNLOADING ||
+                                downloads[it.id]?.state == Download.STATE_COMPLETED
+                    }
+                ) {
+                    Download.STATE_DOWNLOADING
+                } else {
+                    Download.STATE_STOPPED
+                }
+        }
+    }
 
     Box(
         modifier = Modifier.fillMaxSize(),
@@ -197,6 +242,79 @@ fun ArtistSongsScreen(
                 }
             },
         )
+
+        AnimatedVisibility(
+            visible = lazyListState.isScrollingUp(),
+            enter = slideInVertically { it },
+            exit = slideOutVertically { it },
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .windowInsetsPadding(
+                    LocalPlayerAwareWindowInsets.current
+                        .only(WindowInsetsSides.Bottom + WindowInsetsSides.Horizontal),
+                ),
+        ) {
+            SmallFloatingActionButton(
+                onClick = {
+                    if (songs.isEmpty()) return@SmallFloatingActionButton
+                    when (downloadState) {
+                        Download.STATE_COMPLETED, Download.STATE_DOWNLOADING -> {
+                            songs.forEach { song ->
+                                DownloadService.sendRemoveDownload(
+                                    context,
+                                    ExoDownloadService::class.java,
+                                    song.id,
+                                    false,
+                                )
+                            }
+                        }
+                        else -> {
+                            songs.forEach { song ->
+                                val downloadRequest = DownloadRequest
+                                    .Builder(song.id, song.id.toUri())
+                                    .setCustomCacheKey(song.id)
+                                    .setData(song.title.toByteArray())
+                                    .build()
+                                DownloadService.sendAddDownload(
+                                    context,
+                                    ExoDownloadService::class.java,
+                                    downloadRequest,
+                                    false,
+                                )
+                            }
+                        }
+                    }
+                },
+                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                modifier = Modifier
+                    .padding(end = 84.dp, bottom = 72.dp)
+                    .size(40.dp),
+            ) {
+                when (downloadState) {
+                    Download.STATE_COMPLETED -> {
+                        Icon(
+                            painter = painterResource(R.drawable.offline),
+                            contentDescription = stringResource(R.string.saved),
+                            modifier = Modifier.size(20.dp),
+                        )
+                    }
+                    Download.STATE_DOWNLOADING -> {
+                        CircularProgressIndicator(
+                            strokeWidth = 2.dp,
+                            modifier = Modifier.size(16.dp),
+                        )
+                    }
+                    else -> {
+                        Icon(
+                            painter = painterResource(R.drawable.download),
+                            contentDescription = stringResource(R.string.action_download),
+                            modifier = Modifier.size(20.dp),
+                        )
+                    }
+                }
+            }
+        }
 
         HideOnScrollFAB(
             lazyListState = lazyListState,

@@ -562,7 +562,74 @@ fun AlbumScreen(
                             }
                         }
 
-                        
+
+                        Surface(
+                            onClick = {
+                                when (downloadState) {
+                                    Download.STATE_COMPLETED, Download.STATE_DOWNLOADING -> {
+                                        albumWithSongs.songs.forEach { song ->
+                                            DownloadService.sendRemoveDownload(
+                                                context,
+                                                ExoDownloadService::class.java,
+                                                song.id,
+                                                false,
+                                            )
+                                        }
+                                    }
+                                    else -> {
+                                        albumWithSongs.songs.forEach { song ->
+                                            val downloadRequest = DownloadRequest
+                                                .Builder(song.id, song.id.toUri())
+                                                .setCustomCacheKey(song.id)
+                                                .setData(song.title.toByteArray())
+                                                .build()
+                                            DownloadService.sendAddDownload(
+                                                context,
+                                                ExoDownloadService::class.java,
+                                                downloadRequest,
+                                                false,
+                                            )
+                                        }
+                                    }
+                                }
+                            },
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.surfaceVariant,
+                            modifier = Modifier.size(48.dp)
+                        ) {
+                            Box(
+                                contentAlignment = Alignment.Center,
+                                modifier = Modifier.fillMaxSize()
+                            ) {
+                                when (downloadState) {
+                                    Download.STATE_COMPLETED -> {
+                                        Icon(
+                                            painter = painterResource(R.drawable.offline),
+                                            contentDescription = stringResource(R.string.saved),
+                                            modifier = Modifier.size(20.dp),
+                                            tint = MaterialTheme.colorScheme.onSurface
+                                        )
+                                    }
+                                    Download.STATE_DOWNLOADING -> {
+                                        CircularProgressIndicator(
+                                            strokeWidth = 2.dp,
+                                            modifier = Modifier.size(16.dp),
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                    }
+                                    else -> {
+                                        Icon(
+                                            painter = painterResource(R.drawable.download),
+                                            contentDescription = stringResource(R.string.action_download),
+                                            modifier = Modifier.size(20.dp),
+                                            tint = MaterialTheme.colorScheme.onSurface
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+
                         Surface(
                             onClick = {
                                 playerConnection.service.getAutomix(playlistId)
