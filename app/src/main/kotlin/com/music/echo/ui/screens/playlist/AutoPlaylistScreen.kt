@@ -30,6 +30,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -682,7 +683,91 @@ private fun AutoPlaylistHeader(
             ),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            
+
+            androidx.compose.material3.Button(
+                onClick = {
+                    when (downloadState) {
+                        Download.STATE_COMPLETED, Download.STATE_DOWNLOADING -> {
+                            songs.forEach { song ->
+                                DownloadService.sendRemoveDownload(
+                                    context,
+                                    ExoDownloadService::class.java,
+                                    song.song.id,
+                                    false,
+                                )
+                            }
+                        }
+                        else -> {
+                            songs.forEach { song ->
+                                val downloadRequest = DownloadRequest
+                                    .Builder(song.song.id, song.song.id.toUri())
+                                    .setCustomCacheKey(song.song.id)
+                                    .setData(song.song.title.toByteArray())
+                                    .build()
+                                DownloadService.sendAddDownload(
+                                    context,
+                                    ExoDownloadService::class.java,
+                                    downloadRequest,
+                                    false,
+                                )
+                            }
+                        }
+                    }
+                },
+                shape = androidx.compose.material3.ButtonDefaults.shape,
+                colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                ),
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                    vertical = 12.dp
+                ),
+                modifier = Modifier.weight(1f)
+            ) {
+                Row(
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    when (downloadState) {
+                        Download.STATE_COMPLETED -> {
+                            Icon(
+                                painter = painterResource(R.drawable.offline),
+                                contentDescription = stringResource(R.string.saved),
+                                modifier = Modifier.size(20.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Download.STATE_DOWNLOADING -> {
+                            CircularProgressIndicator(
+                                strokeWidth = 2.dp,
+                                modifier = Modifier.size(16.dp),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        else -> {
+                            Icon(
+                                painter = painterResource(R.drawable.download),
+                                contentDescription = stringResource(R.string.action_download),
+                                modifier = Modifier.size(20.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        text = when (downloadState) {
+                            Download.STATE_COMPLETED -> stringResource(R.string.saved)
+                            Download.STATE_DOWNLOADING -> stringResource(R.string.saving)
+                            else -> stringResource(R.string.save_album)
+                        },
+                        style = MaterialTheme.typography.labelLarge,
+                        maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                    )
+                }
+            }
+
+
             androidx.compose.material3.Button(
                 onClick = {
                     playerConnection?.playQueue(

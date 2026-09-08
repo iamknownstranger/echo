@@ -34,3 +34,9 @@ lastfm-empty/build/
 
 # Logs
 *.log
+
+# Release signing keystores — CI decodes the signing key to keystore.jks at the
+# repo root; never commit it (or any local keystore).
+/keystore.jks
+*.jks
+*.keystore

@@ -1,0 +1,208 @@
+name: Release
+
+# Cuts a signed release from a tag.
+#
+#   git tag v1.2.5 && git push origin v1.2.5
+#
+# The tag is the trigger AND the source of truth for the version: the job
+# refuses to build unless versionName in app/build.gradle.kts matches the tag,
+# and unless versionCode is greater than the previous release's. That guard
+# exists because v1.2.4 shipped while main still declared versionCode 154 for
+# 14 further commits — Android silently refuses to install an update whose
+# versionCode has not increased, so an un-bumped release is invisible to every
+# existing user.
+#
+# Required repository secrets (Settings -> Secrets and variables -> Actions):
+#   KEYSTORE_BASE64  - release keystore, base64 encoded (`base64 -w0 keystore.jks`)
+#   KEY_ALIAS        - key alias inside that keystore
+#   KEY_PASSWORD     - password for the key
+#   STORE_PASSWORD   - password for the keystore
+#
+# If any of those are missing the job FAILS. It deliberately does not fall back
+# to a debug key: a debug-signed APK published as a release cannot be installed
+# as an upgrade over a real one, and looks legitimate until users try.
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing tag to build and publish (e.g. v1.2.5)'
+        required: true
+        type: string
+      prerelease:
+        description: 'Mark the GitHub release as a prerelease'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build and publish signed release
+    runs-on: ubuntu-latest
+
+    # Job-level env so it is in scope for every step's `if:` as well as its
+    # `run:`. A secret referenced only in a step's own `env:` block is NOT
+    # visible to that same step's `if:` condition, which silently turns such a
+    # guard into "always false".
+    env:
+      KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+      KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+      KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+      STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+
+    steps:
+      - name: Resolve tag
+        id: tag
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TAG="${{ inputs.tag }}"
+          else
+            TAG="${GITHUB_REF#refs/tags/}"
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
+          echo "Releasing tag $TAG"
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.tag.outputs.tag }}
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Require signing secrets
+        run: |
+          missing=""
+          [ -n "$KEYSTORE_BASE64" ] || missing="$missing KEYSTORE_BASE64"
+          [ -n "$KEY_ALIAS" ]       || missing="$missing KEY_ALIAS"
+          [ -n "$KEY_PASSWORD" ]    || missing="$missing KEY_PASSWORD"
+          [ -n "$STORE_PASSWORD" ]  || missing="$missing STORE_PASSWORD"
+          if [ -n "$missing" ]; then
+            echo "::error::Missing required signing secret(s):$missing"
+            echo "::error::A release must be signed with the real upload key. Refusing to continue."
+            exit 1
+          fi
+          echo "All signing secrets present."
+
+      - name: Verify version matches tag
+        run: |
+          GRADLE_FILE=app/build.gradle.kts
+          VERSION_NAME=$(grep -oP 'versionName\s*=\s*"\K[^"]+' "$GRADLE_FILE" | head -1)
+          VERSION_CODE=$(grep -oP 'versionCode\s*=\s*\K[0-9]+' "$GRADLE_FILE" | head -1)
+          EXPECTED="${{ steps.tag.outputs.version }}"
+
+          echo "tag=${{ steps.tag.outputs.tag }} versionName=$VERSION_NAME versionCode=$VERSION_CODE"
+
+          if [ "$VERSION_NAME" != "$EXPECTED" ]; then
+            echo "::error::versionName ($VERSION_NAME) does not match tag ($EXPECTED). Bump it in $GRADLE_FILE before tagging."
+            exit 1
+          fi
+
+          # versionCode must exceed the most recent previous release tag's, or
+          # Android will refuse to install this build as an upgrade.
+          PREV_TAG=$(git tag --list 'v*' --sort=-v:refname | grep -v "^${{ steps.tag.outputs.tag }}$" | head -1)
+          if [ -n "$PREV_TAG" ]; then
+            PREV_CODE=$(git show "$PREV_TAG:$GRADLE_FILE" 2>/dev/null | grep -oP 'versionCode\s*=\s*\K[0-9]+' | head -1)
+            echo "previous tag $PREV_TAG had versionCode $PREV_CODE"
+            if [ -n "$PREV_CODE" ] && [ "$VERSION_CODE" -le "$PREV_CODE" ]; then
+              echo "::error::versionCode $VERSION_CODE is not greater than $PREV_TAG's $PREV_CODE."
+              echo "::error::Android will refuse to install this as an upgrade. Bump versionCode in $GRADLE_FILE."
+              exit 1
+            fi
+          fi
+          echo "Version checks passed."
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Decode keystore
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 -d > keystore.jks
+          if [ ! -s keystore.jks ]; then
+            echo "::error::Decoded keystore is empty — is KEYSTORE_BASE64 valid base64?"
+            exit 1
+          fi
+
+      - name: Build signed release APKs
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon \
+            assembleUniversalGmsRelease \
+            assembleArm64GmsRelease \
+            assembleUniversalFossRelease
+
+      - name: Collect and verify APKs
+        id: collect
+        run: |
+          mkdir -p release-apks
+          BUILD_TOOLS=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+          VERSION="${{ steps.tag.outputs.version }}"
+          shopt -s nullglob
+
+          found=0
+          for apk in app/build/outputs/apk/*/release/*.apk; do
+            variant=$(basename "$(dirname "$(dirname "$apk")")")
+            dest="release-apks/Echo-Music-${VERSION}-${variant}.apk"
+            cp "$apk" "$dest"
+            found=$((found + 1))
+
+            # A release that is not actually signed with the upload key is worse
+            # than a failed build, so verify rather than trust the build config.
+            "$BUILD_TOOLS/apksigner" verify --print-certs "$dest" > /tmp/sig.txt 2>&1 || {
+              echo "::error::apksigner could not verify $dest"
+              cat /tmp/sig.txt
+              exit 1
+            }
+            echo "--- $dest"
+            grep -E 'Signer #1 certificate (DN|SHA-256 digest)' /tmp/sig.txt || true
+          done
+
+          if [ "$found" -eq 0 ]; then
+            echo "::error::No release APKs were produced."
+            exit 1
+          fi
+
+          (cd release-apks && sha256sum *.apk > SHA256SUMS.txt)
+          cat release-apks/SHA256SUMS.txt
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="${{ steps.tag.outputs.tag }}"
+          PRERELEASE=""
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.prerelease }}" = "true" ]; then
+            PRERELEASE="--prerelease"
+          fi
+
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release $TAG already exists — uploading assets to it."
+            gh release upload "$TAG" release-apks/* --clobber
+          else
+            gh release create "$TAG" release-apks/* \
+              --title "Echo Music $TAG" \
+              --generate-notes \
+              $PRERELEASE
+          fi
+
+      - name: Upload build artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Echo-Music-${{ steps.tag.outputs.tag }}-APKs
+          path: release-apks/
+          if-no-files-found: warn
+
+      - name: Remove keystore
+        if: always()
+        run: rm -f keystore.jks

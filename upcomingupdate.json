@@ -4,6 +4,11 @@
       "title": "Universal playlist link import",
       "description": "Paste any playlist, album, or track link from Spotify, Apple Music, Deezer, Tidal, Amazon Music, SoundCloud, or YouTube Music and Echo Music resolves it into matching YouTube Music tracks — reviewable with per-track confidence, then playable instantly, saved as a library playlist, or queued for offline download.",
       "area": "playlistlink"
+    },
+    {
+      "title": "Download-all button next to Shuffle",
+      "description": "Added a dedicated download-all-tracks button beside Shuffle on Local, Auto (liked/downloaded/uploaded/exported), and Top playlists, on Album, and on the Artist songs list — mirroring the state machine already used on YouTube playlist screens (saved/saving/download icon states driven by the aggregate ExoPlayer download status of every track). Skipped on the cached-songs screen (downloading would make evictable cache entries permanent) and on the main Artist screen (its Subscribe/Radio/Shuffle row is already full, and the artist's shuffle target is often a dynamic radio endpoint with no fixed, enumerable track list to download).",
+      "area": "ui"
     }
   ],
   "bug_fixes": [],
@@ -12,6 +17,11 @@
       "name": "Ananya Sangani",
       "email": "ananyasangani@gmail.com",
       "contribution": "Universal playlist link import feature"
+    },
+    {
+      "name": "Ananya Sangani",
+      "email": "ananyasangani@gmail.com",
+      "contribution": "Download-all button next to Shuffle across playlist, album, and artist songs screens"
     }
   ]
 }

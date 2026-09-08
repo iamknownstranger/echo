@@ -11,6 +11,12 @@ jobs:
     name: Build Signed APK
     runs-on: ubuntu-latest
 
+    # Job-level env: a secret referenced only inside a step's own `env:` block is
+    # NOT in scope for that same step's `if:` condition, so the guards below
+    # evaluated against an empty value and the signed build never ran.
+    env:
+      KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+
     steps:
     - name: Checkout Repository
       uses: actions/checkout@v4
@@ -26,15 +32,12 @@ jobs:
 
     - name: Decode Keystore
       if: ${{ env.KEYSTORE_BASE64 != '' }}
-      env:
-        KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
       run: |
         echo "$KEYSTORE_BASE64" | base64 -d > keystore.jks
 
     - name: Build Release APK
       if: ${{ env.KEYSTORE_BASE64 != '' }}
       env:
-        KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
         KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
         KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
@@ -44,8 +47,6 @@ jobs:
 
     - name: Build Debug APK (fork PR fallback without signing)
       if: ${{ env.KEYSTORE_BASE64 == '' }}
-      env:
-        KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
       run: |
         mkdir -p "$HOME/.android"
         keytool -genkeypair \
