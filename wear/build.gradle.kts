@@ -14,6 +14,12 @@ android {
     versionName = "1.2.5"
   }
   signingConfigs {
+    getByName("debug") {
+      storeFile = file("${System.getProperty("user.home")}/.android/debug.keystore")
+      storePassword = "android"
+      keyAlias = "androiddebugkey"
+      keyPassword = "android"
+    }
     create("release") {
       val key =
         rootProject.file("keystore.jks").takeIf { it.exists() }

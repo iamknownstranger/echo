@@ -225,8 +225,9 @@ adb -s WATCH_SERIAL install -r wear/build/outputs/apk/debug/wear-debug.apk
 ```
 
 Check actual phone APK output naming under `app/build/outputs/apk` if Gradle
-changes the variant directory layout. Both debug APKs normally use the same
-machine's Android debug keystore. A watch debug APK cannot sync with a public
+changes the variant directory layout. Both debug APKs explicitly use `~/.android/debug.keystore`; CI creates that
+shared key before Gradle runs and verifies equal certificate hashes before
+uploading the APKs. A watch debug APK cannot sync with a public
 release phone APK. For distribution, sign both release APKs with the same
 certificate; the watch module reads the same `keystore.jks` or
 `app/keystore/release.keystore` and signing environment variables as the phone. No release key is bundled here.
