@@ -3,8 +3,16 @@ name: Android CI
 on:
   push:
     branches: [ "main" ]
+  workflow_dispatch:
   pull_request:
     branches: [ "main" ]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-ci-${{ github.event.pull_request.head.ref || github.ref_name }}
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -24,6 +32,23 @@ jobs:
         distribution: 'temurin'
         cache: gradle
 
+    - name: Run companion and phone unit tests
+      run: |
+        chmod +x gradlew
+        ./gradlew --max-workers=2 -Pkotlin.compiler.execution.strategy=in-process :wear-sync:testDebugUnitTest :app:testUniversalGmsDebugUnitTest
+
+    - name: Upload test reports
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: Echo-Music-Test-Reports
+        path: |
+          wear-sync/build/test-results/
+          wear-sync/build/reports/tests/
+          app/build/test-results/
+          app/build/reports/tests/
+        if-no-files-found: warn
+
     - name: Decode Keystore
       if: ${{ env.KEYSTORE_BASE64 != '' }}
       env:
@@ -40,7 +65,7 @@ jobs:
         STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
       run: |
         chmod +x gradlew
-        ./gradlew assembleUniversalGmsRelease
+        ./gradlew --max-workers=2 -Pkotlin.compiler.execution.strategy=in-process assembleUniversalGmsRelease :wear:assembleRelease :wear:lintRelease
 
     - name: Build Debug APK (fork PR fallback without signing)
       if: ${{ env.KEYSTORE_BASE64 == '' }}
@@ -48,6 +73,7 @@ jobs:
         KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
       run: |
         mkdir -p "$HOME/.android"
+        if [ ! -f "$HOME/.android/debug.keystore" ]; then
         keytool -genkeypair \
           -keystore "$HOME/.android/debug.keystore" \
           -storepass android \
@@ -56,11 +82,19 @@ jobs:
           -dname "CN=Android Debug,O=Android,C=US" \
           -keyalg RSA \
           -validity 10000
+        fi
         chmod +x gradlew
-        ./gradlew assembleUniversalFossDebug
+        ./gradlew --max-workers=2 -Pkotlin.compiler.execution.strategy=in-process assembleUniversalGmsDebug :wear:assembleDebug :wear:lintDebug
 
     - name: Upload Universal APK
       uses: actions/upload-artifact@v4
       with:
         name: Echo-Music-Universal-APK
         path: app/build/outputs/apk/**/*.apk
+
+    - name: Upload Wear OS APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: Echo-Music-Wear-APK
+        path: wear/build/outputs/apk/**/*.apk
+        if-no-files-found: error

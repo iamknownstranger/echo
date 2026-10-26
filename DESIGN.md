@@ -54,3 +54,14 @@ Always use `MaterialTheme.typography` but respect the app's established font wei
 Before adding a brand new UI component, always check `ui/component/` to see if an existing one already implements our conventions.
 
 **Key Rule:** When working on UI, **look at the existing screens** (like the original Listen Together or Settings screens) and copy their specific visual style, spacing, and modifier chains. Do NOT refactor existing screens to match standard Material 3 unless explicitly requested. Our custom aesthetic takes precedence over M3 guidelines.
+
+## Wear OS round-screen companion
+
+The watch uses a pure black canvas, white typography, and flat charcoal action
+chips. A ScalingLazyColumn with inset horizontal padding keeps controls within
+the round display; TimeText and PositionIndicator provide Wear OS orientation.
+Titles/artist metadata remain compact, with marquee titles for long tracks.
+Playback controls are 40dp circles with 8dp spacing. Separate saved-on-watch and
+phone-download views make audio residency explicit. Storage, pending work and
+failure text appear inline. No animated artwork, glass blur, or dynamic-color
+processing runs on the watch. The phone's visual design is unchanged.

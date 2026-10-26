@@ -33,6 +33,12 @@ Echo Music delivers a seamless, premium listening experience by leveraging YouTu
 
 ---
 
+## Pixel Watch 2 / Wear OS companion
+
+The `:wear` app saves selected completed phone downloads to watch storage and
+plays them independently with Media3. Sync requires the GMS phone build and
+matching package IDs/signatures. See [architecture, setup, limits and testing](docs/WEAR_OS.md).
+
 ## Screenshots
 
 <div align="left">

@@ -319,3 +319,15 @@ but there's no dedicated test-run gate to rely on — verify manually.
 
 - `.github/workflows/android-build.yml` — build check
 - `.github/workflows/codeql.yml` — static analysis / security scanning
+## Wear OS companion (Pixel Watch 2)
+
+- `:wear` is a separate Wear OS APK with app ID matching the phone (including the debug suffix). `:wear-sync` holds the versioned bounded codec and streamed size/SHA-256 verification.
+- GMS-only phone glue is in `app/src/gms/kotlin/com/music/echo/wear/`; `DownloadStateObserver` is an optional Hilt set, empty outside GMS. Completed/removing downloads schedule catalog publication.
+- Watch-selected completed phone downloads are reconstructed with cache-only Media3 reads and transferred as file-backed Data Layer Assets. Never send phone file paths, account credentials, or expiring URLs.
+- Watch files and atomic manifests live under private `files/music`; verification precedes publication. Catalog changes do not delete watch downloads. Request work retries disconnections; receipt cleanup removes transport items only.
+- Watch playback has its own local MediaSessionService; it never takes over phone playback. Session additions resolve only committed local IDs.
+- Watch UI: black background, white type, flat charcoal full-width action chips, marquee metadata, round-screen ScalingLazyColumn, 40dp player buttons and explicit saved-versus-phone browsing. No blur/canvas work on the watch.
+- New watch modules compile against SDK 36 (no SDK 37 APIs); the existing phone module keeps its upstream SDK requirement.
+- Build `:wear:assembleDebug` alongside `:app:assembleUniversalGmsDebug`; both must use the same certificate. Tests: `:wear-sync:testDebugUnitTest`. See `docs/WEAR_OS.md` for architecture, protocol limits, setup and device acceptance checks.
+- The fork retains both FOSS and GMS flavors, SDK 36 and its existing NDK. The Wear integration is confined to GMS; version codes/names match the fork phone APK.
+- Android CI runs shared-protocol and existing playlist-import JVM tests before producing matching phone/watch APK artifacts; test reports are retained even on failure.

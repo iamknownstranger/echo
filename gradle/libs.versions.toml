@@ -1,4 +1,6 @@
 [versions]
+wearable = "19.0.0"
+wearCompose = "1.5.0"
 retrofit = "2.11.0"
 haze = "1.0.2"
 androidGradlePlugin = "9.0.0"
@@ -53,6 +55,10 @@ googleDriveApi = "v3-rev20260428-2.0.0"
 browser = "1.8.0"
 
 [libraries]
+wearable = { module = "com.google.android.gms:play-services-wearable", version.ref = "wearable" }
+wear-compose-foundation = { module = "androidx.wear.compose:compose-foundation", version.ref = "wearCompose" }
+wear-compose-material = { module = "androidx.wear.compose:compose-material", version.ref = "wearCompose" }
+coroutines-play-services = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-play-services", version.ref = "coroutinesGuava" }
 retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit" }
 retrofit-gson = { module = "com.squareup.retrofit2:converter-gson", version.ref = "retrofit" }
 haze = { module = "dev.chrisbanes.haze:haze", version.ref = "haze" }
