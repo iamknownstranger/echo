@@ -331,3 +331,5 @@ but there's no dedicated test-run gate to rely on — verify manually.
 - Build `:wear:assembleDebug` alongside `:app:assembleUniversalGmsDebug`; both must use the same certificate. Tests: `:wear-sync:testDebugUnitTest`. See `docs/WEAR_OS.md` for architecture, protocol limits, setup and device acceptance checks.
 - The fork retains both FOSS and GMS flavors, SDK 36 and its existing NDK. The Wear integration is confined to GMS; version codes/names match the fork phone APK.
 - Android CI runs shared-protocol and existing playlist-import JVM tests before producing matching phone/watch APK artifacts; test reports are retained even on failure.
+
+- CodeQL compiles the Universal GMS phone Java/Kotlin and watch Kotlin sources without packaging/signing APKs; it does not assemble every ABI/flavor or depend on a debug keystore.
