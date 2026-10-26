@@ -10,7 +10,7 @@
   "bug_fixes": [
     "CI: compile Universal GMS phone and Wear OS sources for CodeQL instead of assembling every debug variant without a keystore",
     "Wear sync: explicitly share the phone debug keystore with Wear OS and verify matching APK package IDs, versions and certificates in CI before artifact upload",
-    "CI publication relay: upload verified phone/watch preview artifacts from their successful run using a GitHub Actions repository token"
+    "CI publication relay: upload verified phone/watch preview artifacts from their successful run using a GitHub Actions repository token with explicit SDK tool paths"
   ],
   "contributors": [
     {

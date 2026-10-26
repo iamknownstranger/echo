@@ -345,3 +345,5 @@ existing draft release using a GitHub Actions repository token. It checks the
 source SHA, successful CI result, draft target, APK identities and certificates
 before publishing. This branch is publication infrastructure only; the release
 tag continues to identify the tested feature commit rather than this relay.
+
+The publication relay uses the SDK command-line tools by their explicit Android SDK path rather than assuming sdkmanager is on PATH.

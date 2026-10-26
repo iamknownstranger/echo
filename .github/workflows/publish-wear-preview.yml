@@ -54,7 +54,10 @@ jobs:
           github-token: ${{ github.token }}
           path: release-artifacts/watch
       - name: Ensure stable APK verification tools
-        run: sdkmanager 'build-tools;36.0.0'
+        run: |
+          if [ ! -x "$ANDROID_HOME/build-tools/36.0.0/apksigner" ]; then
+            "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" 'build-tools;36.0.0'
+          fi
       - name: Verify matching APK package, version and certificate
         run: |
           python scripts/verify_wear_apks.py --phone-dir release-artifacts/phone --watch-dir release-artifacts/watch --build-tools-dir "$ANDROID_HOME/build-tools/36.0.0"
