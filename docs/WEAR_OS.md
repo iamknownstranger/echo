@@ -174,6 +174,9 @@ sequenceDiagram
   assets do not occupy Data Layer storage indefinitely. The protocol is designed
   for one paired watch; coordinating several watches is not implemented. Removing an item queued in the current player clears that
   queue before deleting its file.
+- Pending selections are appended to both views even when removed from the phone
+  catalog, preserving Retry/Cancel controls after refresh or restart. Rows are
+  deduplicated by ID, with the primary view metadata taking precedence.
 - Catalog removals do **not** delete saved watch audio. A disconnected phone never
   implies that an offline watch track should be removed.
 - This is catalog/audio replication plus transfer receipts. It does not replicate

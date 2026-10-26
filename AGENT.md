@@ -337,3 +337,5 @@ but there's no dedicated test-run gate to rely on — verify manually.
 - Phone and watch debug signing explicitly use `~/.android/debug.keystore`; do not rely on the Wear plugin default path, which can differ on CI. CI creates the shared key before Gradle and compares APK certificate hashes before uploading either artifact. Verification uses standard runner utilities without requiring ripgrep.
 
 - `scripts/verify_wear_apks.py` verifies each APK with stable SDK 36 build tools and compares package ID, version and certificate, with public diagnostic output. Android CI restores compatible Gradle dependency caches across signing-only build changes.
+
+- Watch track lists use `visibleWatchTracks` in `:wear-sync`: each view appends unsaved persistent wanted selections and deduplicates by ID. Orphaned pending rows retain Retry/Cancel after catalog removal or restart; saved copies stay exclusive to the watch view when absent from the phone catalog. Pending rows have a compact status label. Regression tests run in the existing shared-module CI gate.

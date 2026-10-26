@@ -26,6 +26,7 @@ import androidx.wear.compose.material.*
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import echo.music.wear.sync.WatchTrack
+import echo.music.wear.sync.visibleWatchTracks
 import java.util.concurrent.CancellationException
 import kotlinx.coroutines.guava.await
 
@@ -45,7 +46,7 @@ class WatchActivity : ComponentActivity() {
     var playing by remember { mutableStateOf(false) }
     var nowPlaying by remember { mutableStateOf("") }
     var playerError by remember { mutableStateOf<String?>(null) }
-    var downloadsOnly by remember { mutableStateOf(true) }
+    var watchDownloadsOnly by remember { mutableStateOf(true) }
     var work by remember { mutableStateOf<List<WorkInfo>>(emptyList()) }
     val manager = remember { WorkManager.getInstance(this) }
     DisposableEffect(manager) {
@@ -149,8 +150,8 @@ class WatchActivity : ComponentActivity() {
             }
           }
           item {
-            Action(if (downloadsOnly) "Browse phone downloads" else "Show saved on watch") {
-              downloadsOnly = !downloadsOnly
+            Action(if (watchDownloadsOnly) "Browse phone downloads" else "Show watch downloads") {
+              watchDownloadsOnly = !watchDownloadsOnly
             }
           }
           item { Action("Sync with phone") { WatchSync.refresh(this@WatchActivity) } }
@@ -165,11 +166,17 @@ class WatchActivity : ComponentActivity() {
                 style = MaterialTheme.typography.caption2,
               )
             }
-          val tracks = if (downloadsOnly) state.offline else state.catalog
+          val tracks =
+            visibleWatchTracks(
+              catalog = state.catalog,
+              offline = state.offline,
+              wanted = state.wanted,
+              watchDownloadsOnly = watchDownloadsOnly,
+            )
           if (tracks.isEmpty())
             item {
               Text(
-                if (downloadsOnly) "No music saved yet. Browse phone downloads to choose tracks."
+                if (watchDownloadsOnly) "No music saved yet. Browse phone downloads to choose tracks."
                 else
                   "Download music in Echo on your phone, then tap Sync with phone. Shows up to 200 tracks.",
                 textAlign = TextAlign.Center,
@@ -181,6 +188,9 @@ class WatchActivity : ComponentActivity() {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
               Text(track.title, modifier = Modifier.basicMarquee(), maxLines = 1)
               Text(track.artist, style = MaterialTheme.typography.caption2, maxLines = 1)
+              if (wanted && !saved) {
+                Text("Pending download", style = MaterialTheme.typography.caption2)
+              }
               if (saved) {
                 Action("Play on watch", enabled = controller != null) {
                   playerError = null

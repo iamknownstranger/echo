@@ -65,3 +65,8 @@ Playback controls are 40dp circles with 8dp spacing. Separate saved-on-watch and
 phone-download views make audio residency explicit. Storage, pending work and
 failure text appear inline. No animated artwork, glass blur, or dynamic-color
 processing runs on the watch. The phone's visual design is unchanged.
+
+Pending watch downloads remain visible in both the watch-download and phone-browse
+views, including after phone catalog removal. These rows retain the same flat
+action chips for Retry/Cancel and show a compact "Pending download" caption.
+Rows are deduplicated by ID; saved/phone ordering remains intact.
