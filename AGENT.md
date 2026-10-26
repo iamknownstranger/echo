@@ -337,3 +337,11 @@ but there's no dedicated test-run gate to rely on — verify manually.
 - Phone and watch debug signing explicitly use `~/.android/debug.keystore`; do not rely on the Wear plugin default path, which can differ on CI. CI creates the shared key before Gradle and compares APK certificate hashes before uploading either artifact. Verification uses standard runner utilities without requiring ripgrep.
 
 - `scripts/verify_wear_apks.py` verifies each APK with stable SDK 36 build tools and compares package ID, version and certificate, with public diagnostic output. Android CI restores compatible Gradle dependency caches across signing-only build changes.
+
+## One-off preview publication branch
+
+`ci/publish-wear-preview` relays the already-successful Android CI run into its
+existing draft release using a GitHub Actions repository token. It checks the
+source SHA, successful CI result, draft target, APK identities and certificates
+before publishing. This branch is publication infrastructure only; the release
+tag continues to identify the tested feature commit rather than this relay.

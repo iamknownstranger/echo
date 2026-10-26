@@ -1,0 +1,83 @@
+name: Publish verified Wear preview
+
+on:
+  push:
+    branches: [ci/publish-wear-preview]
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: publish-wear-preview-1
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RELEASE_TAG: v1.2.5-wear-preview.1
+      SOURCE_SHA: a86ace803d7e3ab4dfec2470988ceb6f0a10cef9
+      CI_RUN: '40312265176'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.SOURCE_SHA }}
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Require successful CI for the release source
+        run: |
+          gh run view "$CI_RUN" --repo "$GITHUB_REPOSITORY" --json conclusion,headSha > "$RUNNER_TEMP/ci.json"
+          gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json isDraft,targetCommitish > "$RUNNER_TEMP/release.json"
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          root = Path(os.environ['RUNNER_TEMP'])
+          ci = json.loads((root / 'ci.json').read_text())
+          release = json.loads((root / 'release.json').read_text())
+          assert ci['conclusion'] == 'success' and ci['headSha'] == os.environ['SOURCE_SHA'], ci
+          assert release['isDraft'] and release['targetCommitish'] == os.environ['SOURCE_SHA'], release
+          PY
+      - uses: actions/download-artifact@v4
+        with:
+          name: Echo-Music-Universal-APK
+          run-id: ${{ env.CI_RUN }}
+          github-token: ${{ github.token }}
+          path: release-artifacts/phone
+      - uses: actions/download-artifact@v4
+        with:
+          name: Echo-Music-Wear-APK
+          run-id: ${{ env.CI_RUN }}
+          github-token: ${{ github.token }}
+          path: release-artifacts/watch
+      - name: Ensure stable APK verification tools
+        run: sdkmanager 'build-tools;36.0.0'
+      - name: Verify matching APK package, version and certificate
+        run: |
+          python scripts/verify_wear_apks.py --phone-dir release-artifacts/phone --watch-dir release-artifacts/watch --build-tools-dir "$ANDROID_HOME/build-tools/36.0.0"
+      - name: Prepare release files and checksums
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib, shutil
+          root = Path('release-artifacts')
+          out = root / 'publish'
+          out.mkdir()
+          checksums = []
+          for source, name in [('phone', 'echo-android-debug.apk'), ('watch', 'echo-wear-os-debug.apk')]:
+              apks = list((root / source).rglob('*.apk'))
+              assert len(apks) == 1, apks
+              dest = out / name
+              shutil.copyfile(apks[0], dest)
+              with dest.open('rb') as stream:
+                  digest = hashlib.file_digest(stream, 'sha256').hexdigest()
+              checksums.append(f'{digest}  {name}')
+          (out / 'SHA256SUMS').write_text('\n'.join(checksums) + '\n')
+          PY
+      - name: Upload and publish the preview
+        run: |
+          gh release upload "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" release-artifacts/publish/echo-android-debug.apk release-artifacts/publish/echo-wear-os-debug.apk release-artifacts/publish/SHA256SUMS --clobber
+          gh release edit "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --draft=false --prerelease --latest=false
