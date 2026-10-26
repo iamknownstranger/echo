@@ -334,4 +334,4 @@ but there's no dedicated test-run gate to rely on — verify manually.
 
 - CodeQL compiles the Universal GMS phone Java/Kotlin and watch Kotlin sources without packaging/signing APKs; it does not assemble every ABI/flavor or depend on a debug keystore.
 
-- Phone and watch debug signing explicitly use `~/.android/debug.keystore`; do not rely on the Wear plugin default path, which can differ on CI. CI creates the shared key before Gradle and compares APK certificate hashes before uploading either artifact.
+- Phone and watch debug signing explicitly use `~/.android/debug.keystore`; do not rely on the Wear plugin default path, which can differ on CI. CI creates the shared key before Gradle and compares APK certificate hashes before uploading either artifact. Verification uses standard runner utilities without requiring ripgrep.

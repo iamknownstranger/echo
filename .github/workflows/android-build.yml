@@ -91,9 +91,9 @@ jobs:
 
     - name: Verify matching APK signing certificates
       run: |
-        signer="$(rg --files "$ANDROID_HOME/build-tools" -g apksigner | sort -V | tail -n 1)"
-        phone_apk="$(rg --files app/build/outputs/apk -g '*.apk')"
-        watch_apk="$(rg --files wear/build/outputs/apk -g '*.apk')"
+        signer="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
+        phone_apk="$(find app/build/outputs/apk -type f -name '*.apk')"
+        watch_apk="$(find wear/build/outputs/apk -type f -name '*.apk')"
         test -f "$phone_apk"
         test -f "$watch_apk"
         phone_cert="$("$signer" verify --print-certs "$phone_apk" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p')"
