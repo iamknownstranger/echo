@@ -319,3 +319,23 @@ but there's no dedicated test-run gate to rely on — verify manually.
 
 - `.github/workflows/android-build.yml` — build check
 - `.github/workflows/codeql.yml` — static analysis / security scanning
+## Wear OS companion (Pixel Watch 2)
+
+- `:wear` is a separate Wear OS APK with app ID matching the phone (including the debug suffix). `:wear-sync` holds the versioned bounded codec and streamed size/SHA-256 verification.
+- GMS-only phone glue is in `app/src/gms/kotlin/com/music/echo/wear/`; `DownloadStateObserver` is an optional Hilt set, empty outside GMS. Completed/removing downloads schedule catalog publication.
+- Watch-selected completed phone downloads are reconstructed with cache-only Media3 reads and transferred as file-backed Data Layer Assets. Never send phone file paths, account credentials, or expiring URLs.
+- Watch files and atomic manifests live under private `files/music`; verification precedes publication. Catalog changes do not delete watch downloads. Request work retries disconnections; receipt cleanup removes transport items only.
+- Watch playback has its own local MediaSessionService; it never takes over phone playback. Session additions resolve only committed local IDs.
+- Watch UI: black background, white type, flat charcoal full-width action chips, marquee metadata, round-screen ScalingLazyColumn, 40dp player buttons and explicit saved-versus-phone browsing. No blur/canvas work on the watch.
+- New watch modules compile against SDK 36 (no SDK 37 APIs); the existing phone module keeps its upstream SDK requirement.
+- Build `:wear:assembleDebug` alongside `:app:assembleUniversalGmsDebug`; both must use the same certificate. Tests: `:wear-sync:testDebugUnitTest`. See `docs/WEAR_OS.md` for architecture, protocol limits, setup and device acceptance checks.
+- The fork retains both FOSS and GMS flavors, SDK 36 and its existing NDK. The Wear integration is confined to GMS; version codes/names match the fork phone APK.
+- Android CI runs shared-protocol and existing playlist-import JVM tests before producing matching phone/watch APK artifacts; test reports are retained even on failure.
+
+- CodeQL compiles the Universal GMS phone Java/Kotlin and watch Kotlin sources without packaging/signing APKs; it does not assemble every ABI/flavor or depend on a debug keystore.
+
+- Phone and watch debug signing explicitly use `~/.android/debug.keystore`; do not rely on the Wear plugin default path, which can differ on CI. CI creates the shared key before Gradle and compares APK certificate hashes before uploading either artifact. Verification uses standard runner utilities without requiring ripgrep.
+
+- `scripts/verify_wear_apks.py` verifies each APK with stable SDK 36 build tools and compares package ID, version and certificate, with public diagnostic output. Android CI restores compatible Gradle dependency caches across signing-only build changes.
+
+- Watch track lists use `visibleWatchTracks` in `:wear-sync`: each view appends unsaved persistent wanted selections and deduplicates by ID. Orphaned pending rows retain Retry/Cancel after catalog removal or restart; saved copies stay exclusive to the watch view when absent from the phone catalog. Pending rows have a compact status label. Regression tests run in the existing shared-module CI gate.

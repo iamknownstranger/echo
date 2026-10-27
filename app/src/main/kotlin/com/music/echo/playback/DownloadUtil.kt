@@ -68,6 +68,7 @@ constructor(
     val databaseProvider: DatabaseProvider,
     @DownloadCache val downloadCache: SimpleCache,
     @PlayerCache val playerCache: SimpleCache,
+    private val downloadObservers: Set<@JvmSuppressWildcards DownloadStateObserver>,
 ) {
     private val connectivityManager = context.getSystemService<ConnectivityManager>()!!
     private val downloadQuality by enumPreference(context, echo.music.iad1tya.constants.DownloadQualityKey, echo.music.iad1tya.constants.DownloadQuality.YOUTUBE)
@@ -202,6 +203,9 @@ constructor(
                         download: Download,
                         finalException: Exception?,
                     ) {
+                        if (download.state == Download.STATE_COMPLETED || download.state == Download.STATE_REMOVING) {
+                            downloadObservers.forEach { it.onDownloadsChanged() }
+                        }
                         downloads.update { map ->
                             map.toMutableMap().apply {
                                 set(download.request.id, download)

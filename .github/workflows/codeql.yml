@@ -44,7 +44,7 @@ jobs:
     - name: Build project
       run: |
         chmod +x gradlew
-        ./gradlew assembleDebug
+        ./gradlew --max-workers=2 -Pkotlin.compiler.execution.strategy=in-process :app:compileUniversalGmsDebugJavaWithJavac :wear:compileDebugKotlin
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v3

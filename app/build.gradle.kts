@@ -245,6 +245,9 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach 
 }
 
 dependencies {
+    "gmsImplementation"(project(":wear-sync"))
+    "gmsImplementation"(libs.wearable)
+    "gmsImplementation"(libs.coroutines.play.services)
     implementation(project(":core"))
     implementation(project(":playback"))
 
