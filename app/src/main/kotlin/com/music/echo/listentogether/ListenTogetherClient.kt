@@ -1365,7 +1365,8 @@ class ListenTogetherClient @Inject constructor(
         insertNext: Boolean? = null, 
         queue: List<TrackInfo>? = null,
         queueTitle: String? = null,
-        volume: Float? = null
+        volume: Float? = null,
+        capturedAtNs: Long? = null,
     ) {
         val canControl = _role.value == RoomRole.HOST ||
             (_role.value == RoomRole.GUEST && _roomState.value?.allowParticipantControl == true)
@@ -1376,7 +1377,7 @@ class ListenTogetherClient @Inject constructor(
         val nowNs = SystemClock.elapsedRealtimeNanos()
         val payload = PlaybackActionPayload(
             action, trackId, position, trackInfo, insertNext, queue, queueTitle, volume,
-            capturedAtServerTime = position?.let { clock.serverNowMs(nowNs) }
+            capturedAtServerTime = position?.let { clock.serverNowMs(capturedAtNs ?: nowNs) }
         )
         synchronized(recentActions) {
             if (recentActions.size == 32) recentActions.removeFirst()

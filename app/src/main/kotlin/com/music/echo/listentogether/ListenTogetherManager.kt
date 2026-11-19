@@ -111,6 +111,18 @@ class ListenTogetherManager @Inject constructor(
     val guestPlaybackRestricted = combine(client.roomState, client.role) { state, role ->
         role == RoomRole.GUEST && state?.allowParticipantControl != true
     }.stateIn(scope, SharingStarted.WhileSubscribed(5000), false)
+
+    private fun sendPlayerPosition(
+        player: Player,
+        action: String,
+        trackId: String? = player.currentMediaItem?.mediaId,
+        logMessage: String? = null,
+    ) {
+        val position = player.currentPosition
+        val capturedAtNs = SystemClock.elapsedRealtimeNanos()
+        client.sendPlaybackAction(action, trackId = trackId, position = position, capturedAtNs = capturedAtNs)
+        if (logMessage != null) Timber.tag(TAG).d("$logMessage $position")
+    }
     
     
     private val _chatMessages = MutableStateFlow<List<ChatMessagePayload>>(emptyList())
@@ -153,7 +165,7 @@ class ListenTogetherManager @Inject constructor(
             val trackId = player.currentMediaItem?.mediaId ?: return
             if (playing == lastSyncedIsPlaying || (!playing && lastSyncedIsPlaying == null)) return
             val action = if (playing) PlaybackActions.PLAY else PlaybackActions.PAUSE
-            client.sendPlaybackAction(action, trackId = trackId, position = player.currentPosition)
+            sendPlayerPosition(player, action, trackId)
             lastSyncedIsPlaying = playing
         }
 
@@ -193,10 +205,10 @@ class ListenTogetherManager @Inject constructor(
                 
                 
                 if (reason == Player.DISCONTINUITY_REASON_SEEK) {
-                    Timber.tag(TAG).d("Host sending SEEK to ${newPosition.positionMs}")
                     sendIfAllowed {
                         client.sendPlaybackAction(PlaybackActions.SEEK, trackId = newPosition.mediaItem?.mediaId, position = newPosition.positionMs)
                     }
+                    Timber.tag(TAG).d("Host sent SEEK to ${newPosition.positionMs}")
                 }
             } catch (e: Exception) {
                 Timber.tag(TAG).e(e, "Error in onPositionDiscontinuity")
@@ -425,10 +437,8 @@ class ListenTogetherManager @Inject constructor(
                         val isPlaying = player.isPlaying
                         if (isPlaying) {
                             lastSyncedIsPlaying = true
-                            val position = player.currentPosition
-                            Timber.tag(TAG).d("Host already playing on room create, sending PLAY at $position")
                             sendIfAllowed {
-                                client.sendPlaybackAction(PlaybackActions.PLAY, trackId = metadata.id, position = position)
+                                sendPlayerPosition(player, PlaybackActions.PLAY, metadata.id, "Host already playing on room create, sending PLAY at")
                             }
                         }
                     }
@@ -470,9 +480,7 @@ class ListenTogetherManager @Inject constructor(
                             if (metadata.id != lastSyncedTrackId) sendTrackChangeInternal(metadata)
 
                             if (player.isPlaying) {
-                                val pos = player.currentPosition
-                                Timber.tag(TAG).d("[SYNC] Host playing, sending PLAY at $pos for new joiner")
-                                client.sendPlaybackAction(PlaybackActions.PLAY, trackId = player.currentMediaItem?.mediaId, position = pos)
+                                sendPlayerPosition(player, PlaybackActions.PLAY, logMessage = "[SYNC] Sending PLAY for new joiner at")
                             }
                             
                         }
@@ -555,10 +563,7 @@ class ListenTogetherManager @Inject constructor(
                                 try {
                                     val currentPlayer = playerConnection?.player
                                     if (isHost && currentPlayer?.isPlaying == true) {
-                                        val pos = currentPlayer.currentPosition
-                                        Timber.tag(TAG)
-                                            .d("Reconnected host is playing, sending PLAY at $pos")
-                                        client.sendPlaybackAction(PlaybackActions.PLAY, trackId = currentPlayer.currentMediaItem?.mediaId, position = pos)
+                                        sendPlayerPosition(currentPlayer, PlaybackActions.PLAY, logMessage = "Reconnected host sending PLAY at")
                                     }
                                 } catch (e: Exception) {
                                     Timber.tag(TAG).e(e, "Error sending play state after reconnect")
@@ -614,10 +619,8 @@ class ListenTogetherManager @Inject constructor(
                         sendTrackChangeInternal(metadata)
 
                         if (player.isPlaying) {
-                            val position = player.currentPosition
-                            Timber.tag(TAG).d("New host is playing, sending PLAY at $position")
                             sendIfAllowed {
-                                client.sendPlaybackAction(PlaybackActions.PLAY, trackId = player.currentMediaItem?.mediaId, position = position)
+                                sendPlayerPosition(player, PlaybackActions.PLAY, logMessage = "New host sending PLAY at")
                             }
                         }
                     }
@@ -1214,9 +1217,7 @@ class ListenTogetherManager @Inject constructor(
                 if (!isInRoom || !isHost || connectionState.value != ConnectionState.CONNECTED) continue
                 playerConnection?.player?.let { player ->
                     if (player.isPlaying) {
-                        val pos = player.currentPosition
-                        Timber.tag(TAG).d("Host heartbeat: sending PLAY at pos $pos")
-                        client.sendPlaybackAction(PlaybackActions.PLAY, trackId = player.currentMediaItem?.mediaId, position = pos)
+                        sendPlayerPosition(player, PlaybackActions.PLAY, logMessage = "Host heartbeat: sending PLAY at")
                     }
                 }
             }

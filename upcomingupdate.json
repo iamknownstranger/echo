@@ -11,7 +11,7 @@
     "CI: compile Universal GMS phone and Wear OS sources for CodeQL instead of assembling every debug variant without a keystore",
     "Wear sync: explicitly share the phone debug keystore with Wear OS and verify matching APK package IDs, versions and certificates in CI before artifact upload",
     "Wear OS: keep pending downloads visible and cancellable in both views after their phone catalog entry disappears, including after restart",
-    "Listen Together accounts for network delay and time spent buffering, uses a monotonic nanosecond clock to follow the host, and keeps rapid seeks and play/pause commands in order."
+    "Listen Together accounts for network delay and buffering, follows the host with a monotonic nanosecond clock, and keeps rapid seeks and play/pause commands in order. On Wi-Fi, an occasional delayed clock probe no longer interrupts fine playback corrections."
   ],
   "contributors": [
     {
