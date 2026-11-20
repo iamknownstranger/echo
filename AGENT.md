@@ -114,6 +114,14 @@ group listening), Discord Rich Presence, and more. It ships as a single
 
 Package/namespace: `echo.music.iad1tya` (app module). Application ID matches.
 
+## Apple silicon macOS client
+
+The macos directory contains a separate Swift package targeting macOS 14 and later. Build the native app and ZIP with `./macos/build.sh`. The package uses SwiftUI, AVFoundation, MediaPlayer, and URLSession. Catalog mirrors Echo’s home, browse, song-search, and public player contracts. Preserve video IDs and Echo share-link compatibility when those contracts change. The library persists atomically under Application Support and validates managed downloads before use.
+
+The desktop window uses a leading sidebar, artwork shelves, compact song rows, a persistent transport, and optional lyrics or queue panels. Keep the system appearance and emphasize the active track with a single accent. See [the Mac guide](macos/README.md) and the macOS section of [DESIGN.md](DESIGN.md) for testing and layout conventions.
+
+The Mac sidebar hosts the room setup and membership view. RoomSession handles acknowledgements, membership and clock samples. RoomWire maps Android field numbers and gzip payloads. RoomPlayback applies server state to the existing Player and publishes host transport changes. Keep local file URLs off the wire. For a late join, Metroserver sends the current track separately from the upcoming queue. Test new actions in both hosting directions. [Mac test instructions](macos/README.md#verification)
+
 ## Tech stack
 
 - **Language:** Kotlin (JVM target 21), Gradle Kotlin DSL (`.kts`)
@@ -212,6 +220,8 @@ widget/         Home-screen widget
 The manager keeps the latest playing or paused position while waiting for Media3 readiness and the room's buffer completion. The host reports pauses for buffering, resumes when audio advances, and publishes its playing position every two seconds. Guests correct small drift with temporary speed adjustments and seek for large errors or explicit position changes. When three recent low-delay samples agree, the guest uses their clock spread and a one-millisecond Media3 floor to correct small offsets. A single delayed pair in the last four can be skipped when all four are fresh. Repeated delays widen the tolerance again.
 
 The client restores saved sessions before opening a socket and keeps the retry count until room reattachment succeeds. It handles probe rejection independently of room requests and can reconnect once to recover ambiguous legacy pong timing until a clean sample arrives. The host publishes a track change before a seek into that track. Marked replacements contain upcoming entries. For an unmarked snapshot, keep the guest's known occurrence in a full queue and prepend the current track if the snapshot matches its known upcoming entries. Protobuf playback positions are optional. Metroserver timestamps its authoritative play, pause and seek broadcasts, so those actions can recover an omitted zero from a legacy Protobuf relay.
+
+Metroserver and older Echo relays assign different meanings to protobuf RoomState field 10. The Mac waits for an explicit room-settings event before granting guest controls. Android requests authoritative state if the relay rejects a guest command with `not_host`.
 
 Senderless `CHANGE_TRACK` and `SYNC_QUEUE` echoes must match the queue entries and replacement mode. `QUEUE_ADD` echoes must match the insertion mode, with a missing `insert_next` equivalent to `false`.
 

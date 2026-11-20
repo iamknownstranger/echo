@@ -1256,6 +1256,14 @@ class ListenTogetherClient @Inject constructor(private val context: Context) {
           log(LogLevel.ERROR, "Server error", "${payload.code}: ${payload.message}")
 
           when (payload.code) {
+            "not_host" -> {
+              // Older Echo relays use RoomState field 10 for shared controls. Metroserver
+              // uses it for the revision. Its rejection settles an ambiguous snapshot.
+              if (_role.value == RoomRole.GUEST && _roomState.value?.allowParticipantControl == true) {
+                _roomState.value = _roomState.value?.copy(allowParticipantControl = false)
+                requestSync()
+              }
+            }
             "session_not_found" -> {
 
               if (storedRoomCode != null && storedUsername != null && !wasHost) {

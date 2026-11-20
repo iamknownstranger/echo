@@ -107,3 +107,9 @@ Ambient Mode may layer muted Canvas video artwork inside the existing album-art 
 ## Listen Together QR invites
 
 The host's invite QR sits in a standard dialog as a sharp black and white square with its blank border preserved in every theme. Place Room QR code below the existing copy actions and Scan QR code below Join as secondary text actions. A scan fills the existing room-code field so guests can review it and join through the usual approval flow.
+
+## macOS player
+
+Keep discovery, search, saved music, and playlists in a leading sidebar. Present catalog artwork in horizontally scrolling shelves and collection contents in compact track rows. Use bold titles, system text colors, and a restrained red accent for selection and playback. The bottom transport stays visible while browsing. Queue and lyrics share a trailing panel so the user keeps their place in the catalog. Give icon-only playback and library actions accessibility labels and provide menu shortcuts for frequent actions.
+
+Listen Together occupies a sidebar destination. Room setup exposes the listener name, server, create action and join field. Pasting an invite fills the room code for review. Once admitted, the listener sees the room code, connection state, members and leave action. Keep pending join requests next to their approval controls and leave playback in the existing bottom transport.

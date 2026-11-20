@@ -1,7 +1,7 @@
 <div align="center">
   <img src="assets/banner.png" alt="Echo Music Logo"/>
 
-  <p><b>A modern Android music app with ad-free streaming, synced lyrics, offline playback, and an intuitive user experience.</b></p>
+  <p><b>A music player for Android and Apple silicon Macs with streaming, synced lyrics, and offline playback.</b></p>
 </div>
 
 ---
@@ -235,6 +235,10 @@ Visit the official repository to get started:
 
 ## Installation & Setup
 
+### macOS on Apple silicon
+
+Build the native SwiftUI client with `./macos/build.sh`, then open **macos/build/Echo Music.app**. It targets macOS 14 and later and supports catalog discovery, streaming, offline downloads, local audio, playlists, Echo song links, lyrics, and Listen Together rooms with Android. [Mac build and feature guide](macos/README.md) · [Provider and feature roadmap](macos/ROADMAP.md)
+
 ### Android Installation
 
 Download the latest pre-compiled APK from the [Releases Page](https://github.com/EchoMusicApp/Echo-Music/releases/latest).
@@ -332,6 +336,8 @@ Echo Music stands on the shoulders of several excellent open-source projects. Si
 | Project                                                                                                                   | Description                                         |
 | :------------------------------------------------------------------------------------------------------------------------ | :-------------------------------------------------- |
 | **[Metrolist](https://github.com/MetrolistGroup/Metrolist)** & **[Vivi Music](https://github.com/vivizzz007/vivi-music)** | Foundational inspiration and architecture reference |
+| **[Metroserver](https://github.com/MetrolistGroup/metroserver)** | Listen Together relay and wire protocol used for Android and Mac room interoperability. |
+| **[Antra](https://github.com/anandprtp/Antra)** | Reference for the provider inventory, recording matching and library-management roadmap. |
 | **[BeatSync](https://github.com/freeman-jiang/beatsync)** by **[Freeman Jiang](https://github.com/freeman-jiang)** | The paired clock probes and minimum-RTT selection used at [beatsync.gg](https://www.beatsync.gg/) inspired Echo’s Listen Together clock. |
 | **[ZXing](https://github.com/zxing/zxing)** | Encodes Listen Together invite QR codes and reads them from the camera on device. |
 | **[ArchiveTune](https://github.com/koiverse/ArchiveTune)**                                                                | Material You UI inspiration                         |
